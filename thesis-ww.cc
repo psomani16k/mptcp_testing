@@ -3,7 +3,7 @@
 //          |  T0  |                                                   |  T1  |
 //          +------+                                                   +------+
 //                  \                                                 /
-//                   \ 5Mbps                                         / 5Mbps
+//                   \ 1Gbps                                         / 1Gbps
 //                    \                                             /
 //                     \                                           /
 //                      +------+                           +------+
@@ -40,6 +40,8 @@
 #include "ns3/point-to-point-module.h"
 
 using namespace ns3;
+NS_LOG_COMPONENT_DEFINE ("thesis");
+
 void setPos(Ptr<Node> n, int x, int y, int z)
 {
         Ptr<ConstantPositionMobilityModel> loc =
@@ -152,24 +154,28 @@ int main(int argc, char *argv[])
 
         // SETTING UP TRAFFIC NODES
 
-        pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+        pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
         pointToPoint.SetChannelAttribute("Delay", StringValue("1ns"));
 
         // connecting T0 <-> R0
         NetDeviceContainer t0r0 = pointToPoint.Install(traffic.Get(0), routers.Get(0));
         Ipv4InterfaceContainer t0r0Ip = r0addr.Assign(t0r0);
+        LinuxStackHelper::RunIp(traffic.Get(0), Seconds(0.1), "route add default via 10.0.0.4 dev sim0");
 
         // connecting T1 <-> R1
         NetDeviceContainer t1r1 = pointToPoint.Install(traffic.Get(1), routers.Get(1));
         Ipv4InterfaceContainer t1r1Ip = r1addr.Assign(t1r1);
+        LinuxStackHelper::RunIp(traffic.Get(1), Seconds(0.1), "route add default via 10.1.0.4 dev sim0");
 
         // connecting T2 <-> R2
         NetDeviceContainer t2r2 = pointToPoint.Install(traffic.Get(2), routers.Get(2));
         Ipv4InterfaceContainer t2r2Ip = r2addr.Assign(t2r2);
+        LinuxStackHelper::RunIp(traffic.Get(2), Seconds(0.1), "route add default via 10.2.0.4 dev sim0");
 
         // connecting T3 <-> R3
         NetDeviceContainer t3r3 = pointToPoint.Install(traffic.Get(3), routers.Get(3));
         Ipv4InterfaceContainer t3r3Ip = r3addr.Assign(t3r3);
+        LinuxStackHelper::RunIp(traffic.Get(3), Seconds(0.1), "route add default via 10.3.0.4 dev sim0");
 
         // debug
         stack.SysctlSet(nodes, ".net.mptcp.mptcp_debug", "1");
@@ -179,35 +185,62 @@ int main(int argc, char *argv[])
 
         dce.SetStackSize(1 << 20);
 
-        // Launch iperf client on node 0
+        // MPTCP APPS
+
+        // Launch iperf client on node 0 - MPTCP traffic starts at 5 - 35 sec
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.AddArgument("-c");
-        dce.AddArgument("10.3.0.1");
-        dce.AddArgument("-i");
-        dce.AddArgument("0.1");
-        dce.AddArgument("--time");
-        dce.AddArgument("10");
-
+        dce.ParseArguments("-c 10.3.0.1 -i 1 --time 60");
         apps = dce.Install(nodes.Get(0));
         apps.Start(Seconds(5.0));
-        apps.Stop(Seconds(20));
+        apps.Stop(Seconds(66));
 
         // Launch iperf server on node 1
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.AddArgument("-s");
-        dce.AddArgument("-P");
-        dce.AddArgument("1");
+        dce.ParseArguments("-s");
         apps = dce.Install(nodes.Get(1));
-
         apps.Start(Seconds(2));
+        apps.Stop(Seconds(70));
+
+        // UDP APPS
+        dce.SetBinary("iperf");
+        dce.ResetArguments();
+        dce.ResetEnvironment();
+        dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
+        apps = dce.Install(traffic.Get(0));
+        apps.Start(Seconds(15.0));
+        apps.Stop(Seconds(40));
+
+        dce.SetBinary("iperf");
+        dce.ResetArguments();
+        dce.ResetEnvironment();
+        dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
+        apps = dce.Install(traffic.Get(2));
+        apps.Start(Seconds(25.0));
+        apps.Stop(Seconds(50));
+
+        dce.SetBinary("iperf");
+        dce.ResetArguments();
+        dce.ResetEnvironment();
+        dce.ParseArguments("-u -s");
+        apps = dce.Install(traffic.Get(1));
+        apps.Start(Seconds(2));
+        apps.Stop(Seconds(45));
+
+        dce.SetBinary("iperf");
+        dce.ResetArguments();
+        dce.ResetEnvironment();
+        dce.ParseArguments("-u -s");
+        apps = dce.Install(traffic.Get(3));
+        apps.Start(Seconds(2));
+        apps.Stop(Seconds(55));
 
         pointToPoint.EnablePcapAll("thesis", false);
 
-        Simulator::Stop(Seconds(30.0));
+        Simulator::Stop(Seconds(80.0));
         Simulator::Run();
         Simulator::Destroy();
 
