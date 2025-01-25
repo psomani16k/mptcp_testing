@@ -6,9 +6,9 @@
 //                   \ 1Gbps                                         / 1Gbps
 //                    \                                             /
 //                     \                                           /
-//                      +------+                           +------+
-//                      |  R0  |---------------------------|  R1  |
-//                      +------+           10Mbps          +------+
+//                      +------+           /\              +------+
+//                      |  R0  |-----------  \  -----------|  R1  |
+//                      +------+              \/           +------+
 //                     /                                           \ 
 //                    / 1Gbps                                       \ 1Gbps
 //                   /                                               \ 
@@ -41,7 +41,7 @@
 
 using namespace ns3;
 
-int thesis_ww()
+int thesis_wlw()
 {
         DceManagerHelper dceManager;
         dceManager.SetTaskManagerAttribute("FiberManagerType",
@@ -199,7 +199,7 @@ int thesis_ww()
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
+        dce.ParseArguments("-u -c 10.1.0.3 -b 2M --time 20");
         apps = dce.Install(traffic.Get(0));
         apps.Start(Seconds(15.0));
         apps.Stop(Seconds(40));
@@ -207,7 +207,7 @@ int thesis_ww()
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
+        dce.ParseArguments("-u -c 10.3.0.3 -b 2M --time 20");
         apps = dce.Install(traffic.Get(2));
         apps.Start(Seconds(25.0));
         apps.Stop(Seconds(50));
@@ -228,7 +228,7 @@ int thesis_ww()
         apps.Start(Seconds(2));
         apps.Stop(Seconds(55));
 
-        pointToPoint.EnablePcapAll("thesis-ww", false);
+        pointToPoint.EnablePcapAll("thesis-wlw", false);
 
         Simulator::Stop(Seconds(80.0));
         Simulator::Run();
