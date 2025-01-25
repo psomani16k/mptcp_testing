@@ -40,8 +40,18 @@
 #include "ns3/point-to-point-module.h"
 
 using namespace ns3;
+NS_LOG_COMPONENT_DEFINE("thesis");
 
-int thesis_wlw()
+void setPos(Ptr<Node> n, int x, int y, int z)
+{
+        Ptr<ConstantPositionMobilityModel> loc =
+            CreateObject<ConstantPositionMobilityModel>();
+        n->AggregateObject(loc);
+        Vector locVec2(x, y, z);
+        loc->SetPosition(locVec2);
+}
+
+int main()
 {
         DceManagerHelper dceManager;
         dceManager.SetTaskManagerAttribute("FiberManagerType",
@@ -199,7 +209,7 @@ int thesis_wlw()
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.1.0.3 -b 2M --time 20");
+        dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
         apps = dce.Install(traffic.Get(0));
         apps.Start(Seconds(15.0));
         apps.Stop(Seconds(40));
@@ -207,7 +217,7 @@ int thesis_wlw()
         dce.SetBinary("iperf");
         dce.ResetArguments();
         dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.3.0.3 -b 2M --time 20");
+        dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
         apps = dce.Install(traffic.Get(2));
         apps.Start(Seconds(25.0));
         apps.Stop(Seconds(50));

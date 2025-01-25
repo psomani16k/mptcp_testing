@@ -41,7 +41,7 @@
 
 using namespace ns3;
 
-int thesis_wlw()
+int main()
 {
         DceManagerHelper dceManager;
         dceManager.SetTaskManagerAttribute("FiberManagerType",
