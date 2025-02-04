@@ -10,6 +10,7 @@ def build(bld):
 	   		            target='bin/thesis',
 			            # source=[ 'thesis-ww.cc'],				            
 			            source=[ 'thesis-wlw.cc'],				            
+			            # source=[ 'test.cc'],				            
 			            # source=[ 'thesis-wlwl.cc'],				            
 			            )
 

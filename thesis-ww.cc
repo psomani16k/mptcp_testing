@@ -3,7 +3,7 @@
 //          |  T0  |                                                   |  T1  |
 //          +------+                                                   +------+
 //                  \                                                 /
-//                   \ 1Gbps                                         / 1Gbps
+//                   \ 100Mbps                                       / 100Mbps
 //                    \                                             /
 //                     \                                           /
 //                      +------+                           +------+
@@ -16,7 +16,7 @@
 //           |  N0  |                                               |  N1  |
 //           +------+                                               +------+
 //                   \                                               /
-//                    \ 1Gbps                                       / 1Gbps
+//                    \ 100Mbps                                     / 100Mbps
 //                     \                                           /
 //                      +------+           10Mbps          +------+
 //                      |  R2  |---------------------------|  R3  |
@@ -105,7 +105,7 @@ int main()
 
         // SETTING UP MPTCP NODES
 
-        pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
+        pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
         pointToPoint.SetChannelAttribute("Delay", StringValue("1ns"));
 
         // connecting N0 <-> R0
