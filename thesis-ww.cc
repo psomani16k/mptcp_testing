@@ -84,24 +84,24 @@ int main()
         // connecting R0 <-> R1
         NetDeviceContainer r0r1 = pointToPoint.Install(routers.Get(0), routers.Get(1));
         Ipv4InterfaceContainer r0r1Ip = r0r1addr.Assign(r0r1);
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.1.0.0/24 via 11.0.0.1 dev sim0"); // outbound - R1 network
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.1/32 via 10.0.0.2 dev sim1"); // inbound - N0
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.3/32 via 10.0.0.4 dev sim2"); // inbound - T0
+        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.1.0.0/24 via 11.0.0.2 dev sim0"); // outbound - R1 network
+        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.1/32 via 10.0.0.1 dev sim1"); // inbound - N0
+        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.3/32 via 10.0.0.3 dev sim2"); // inbound - T0
 
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.0.0.0/24 via 11.0.0.2 dev sim0"); // outbound - R0 network
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.1/32 via 10.1.0.2 dev sim1"); // inbound - N1
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.3/32 via 10.1.0.4 dev sim2"); // inbound - T1
+        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.0.0.0/24 via 11.0.0.1 dev sim0"); // outbound - R0 network
+        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.1/32 via 10.1.0.1 dev sim1"); // inbound - N1
+        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.3/32 via 10.1.0.3 dev sim2"); // inbound - T1
 
         // connectin R2 <-> R3
         NetDeviceContainer r2r3 = pointToPoint.Install(routers.Get(2), routers.Get(3));
         Ipv4InterfaceContainer r2r3Ip = r2r3addr.Assign(r2r3);
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.3.0.0/24 via 11.1.0.1 dev sim0"); // outbound to R3 network
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.1/32 via 10.2.0.2 dev sim1"); // inbound - N0
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.3/32 via 10.2.0.4 dev sim2"); // inbound - T2
+        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.3.0.0/24 via 11.1.0.2 dev sim0"); // outbound to R3 network
+        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.1/32 via 10.2.0.1 dev sim1"); // inbound - N0
+        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.3/32 via 10.2.0.3 dev sim2"); // inbound - T2
 
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.2.0.0/24 via 11.1.0.2 dev sim0"); // outbound to R2 network
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.1/32 via 10.3.0.2 dev sim1"); // inbound - N1
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.3/32 via 10.3.0.4 dev sim2"); // inbound - T3
+        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.2.0.0/24 via 11.1.0.1 dev sim0"); // outbound to R2 network
+        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.1/32 via 10.3.0.1 dev sim1"); // inbound - N1
+        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.3/32 via 10.3.0.3 dev sim2"); // inbound - T3
 
         // SETTING UP MPTCP NODES
 
