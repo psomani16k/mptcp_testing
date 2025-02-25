@@ -111,7 +111,7 @@ int main()
         // connecting N0 <-> R0
         NetDeviceContainer n0r0 = pointToPoint.Install(nodes.Get(0), routers.Get(0));
         Ipv4InterfaceContainer n0r0Ip = r0addr.Assign(n0r0);
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "rule add from 10.0.0.1/24 table 1");
+        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "rule add from 10.0.0.1/32 table 1");
         LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.0.0.0/24 dev sim0 scope link table 1");
         LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add default via 10.0.0.2 dev sim0 table 1");
 
