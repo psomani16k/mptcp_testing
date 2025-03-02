@@ -52,17 +52,17 @@ int main(int argc, char *argv[]) {
   Ptr<RateErrorModel> lteErrorModel =
       CreateObjectWithAttributes<RateErrorModel>(
           "RanVar", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1.0]"),
-          "ErrorRate", DoubleValue(0.015), "ErrorUnit",
+          "ErrorRate", DoubleValue(0.02), "ErrorUnit",
           EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
   Ptr<RateErrorModel> wifiErrorModel =
       CreateObjectWithAttributes<RateErrorModel>(
           "RanVar", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1.0]"),
-          "ErrorRate", DoubleValue(0.055), "ErrorUnit",
+          "ErrorRate", DoubleValue(0.1), "ErrorUnit",
           EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
   Ptr<RateErrorModel> wimaxErrorModel =
       CreateObjectWithAttributes<RateErrorModel>(
           "RanVar", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1.0]"),
-          "ErrorRate", DoubleValue(0.15), "ErrorUnit",
+          "ErrorRate", DoubleValue(0.2), "ErrorUnit",
           EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
 
   NodeContainer nodes, routers, lte, wifi, wimax, traffic;
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
 
   // R1 <-> LTE
   p2pHelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
-  p2pHelper.SetChannelAttribute("Delay", StringValue("1ms"));
+  p2pHelper.SetChannelAttribute("Delay", StringValue("10ms"));
   NetDeviceContainer r1LteIp = p2pHelper.Install(routers.Get(1), lte.Get(0));
   routerAddr.Assign(r1LteIp);
 
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
 
   // R3 <-> WiFi
   p2pHelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
-  p2pHelper.SetChannelAttribute("Delay", StringValue("1ms"));
+  p2pHelper.SetChannelAttribute("Delay", StringValue("10ms"));
   NetDeviceContainer r3WifiIp = p2pHelper.Install(routers.Get(3), wifi.Get(0));
   routerAddr.Assign(r3WifiIp);
 
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
 
   // R5 <-> WiMax
   p2pHelper.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
-  p2pHelper.SetChannelAttribute("Delay", StringValue("1ms"));
+  p2pHelper.SetChannelAttribute("Delay", StringValue("10ms"));
   NetDeviceContainer r5WimaxIp =
       p2pHelper.Install(routers.Get(5), wimax.Get(0));
   routerAddr.Assign(r5WimaxIp);
@@ -450,7 +450,7 @@ int main(int argc, char *argv[]) {
   // source on N0
   BulkSendHelper bulkSend = BulkSendHelper("ns3::LinuxTcpSocketFactory",
                                            InetSocketAddress("12.0.2.1", 9));
-  int dataToSendMb = 1000;
+  int dataToSendMb = 100000;
   bulkSend.SetAttribute("MaxBytes", UintegerValue(dataToSendMb * 1000000));
   apps = bulkSend.Install(nodes.Get(0));
   apps.Start(Seconds(20));
@@ -465,384 +465,57 @@ int main(int argc, char *argv[]) {
   // Traffic Data
   // ------------
 
-  // TCP source
-
-  // T0
-  /// 44 bytes
-  OnOffHelper onOffTcpT0_44 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                          InetSocketAddress("14.0.0.1", 5000));
-  onOffTcpT0_44.SetAttribute(
-      "DataRate",
-      StringValue("22.05Mbps")); // 49% of 90% of 50% of 100Mbps link
-  onOffTcpT0_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffTcpT0_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffTcpT0_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT0_44.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffTcpT0_576 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.0.1", 5000));
-  onOffTcpT0_576.SetAttribute(
-      "DataRate", StringValue("0.54Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT0_576.SetAttribute("PacketSize", UintegerValue(576)); // Packet size
-  onOffTcpT0_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffTcpT0_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT0_576.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffTcpT0_628 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.0.1", 5000));
-  onOffTcpT0_628.SetAttribute(
-      "DataRate", StringValue("0.945Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT0_628.SetAttribute("PacketSize", UintegerValue(628)); // Packet size
-  onOffTcpT0_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffTcpT0_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT0_628.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffTcpT0_1300 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.0.1", 5000));
-  onOffTcpT0_1300.SetAttribute("DataRate", StringValue("0.765Mbps"));
-  onOffTcpT0_1300.SetAttribute("PacketSize", UintegerValue(1300));
-  onOffTcpT0_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffTcpT0_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT0_1300.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffTcpT0_1500 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.0.1", 5000));
-  onOffTcpT0_1500.SetAttribute(
-      "DataRate", StringValue("20.7Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT0_1500.SetAttribute("PacketSize",
-                               UintegerValue(1500)); // Packet size
-  onOffTcpT0_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffTcpT0_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT0_1500.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-
-  // T2
-  /// 44 bytes
-  OnOffHelper onOffTcpT2_44 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                          InetSocketAddress("14.0.1.1", 5000));
-  onOffTcpT2_44.SetAttribute(
-      "DataRate",
-      StringValue("22.05Mbps")); // 49% of 90% of 50% of 100Mbps link
-  onOffTcpT2_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffTcpT2_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffTcpT2_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT2_44.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffTcpT2_576 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.1.1", 5000));
-  onOffTcpT2_576.SetAttribute(
-      "DataRate", StringValue("0.54Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT2_576.SetAttribute("PacketSize", UintegerValue(576)); // Packet size
-  onOffTcpT2_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffTcpT2_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT2_576.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffTcpT2_628 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.1.1", 5000));
-  onOffTcpT2_628.SetAttribute(
-      "DataRate", StringValue("0.945Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT2_628.SetAttribute("PacketSize", UintegerValue(628)); // Packet size
-  onOffTcpT2_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffTcpT2_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT2_628.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffTcpT2_1300 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.1.1", 5000));
-  onOffTcpT2_1300.SetAttribute(
-      "DataRate", StringValue("0.765Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT2_1300.SetAttribute("PacketSize",
-                               UintegerValue(1300)); // Packet size
-  onOffTcpT2_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffTcpT2_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT2_1300.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffTcpT2_1500 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.1.1", 5000));
-  onOffTcpT2_1500.SetAttribute(
-      "DataRate", StringValue("20.7Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT2_1500.SetAttribute("PacketSize",
-                               UintegerValue(1500)); // Packet size
-  onOffTcpT2_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffTcpT2_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT2_1500.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-
-  // T4
-  /// 44 bytes
-  OnOffHelper onOffTcpT4_44 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                          InetSocketAddress("14.0.2.1", 5000));
-  onOffTcpT4_44.SetAttribute(
-      "DataRate",
-      StringValue("22.05Mbps")); // 49% of 90% of 50% of 100Mbps link
-  onOffTcpT4_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffTcpT4_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffTcpT4_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT4_44.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffTcpT4_576 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.2.1", 5000));
-  onOffTcpT4_576.SetAttribute(
-      "DataRate", StringValue("0.54Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT4_576.SetAttribute("PacketSize", UintegerValue(576)); // Packet size
-  onOffTcpT4_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffTcpT4_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT4_576.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffTcpT4_628 = OnOffHelper("ns3::LinuxTcpSocketFactory",
-                                           InetSocketAddress("14.0.2.1", 5000));
-  onOffTcpT4_628.SetAttribute(
-      "DataRate", StringValue("0.945Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT4_628.SetAttribute("PacketSize", UintegerValue(628)); // Packet size
-  onOffTcpT4_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffTcpT4_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT4_628.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffTcpT4_1300 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.2.1", 5000));
-  onOffTcpT4_1300.SetAttribute(
-      "DataRate", StringValue("0.765Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT4_1300.SetAttribute("PacketSize",
-                               UintegerValue(1300)); // Packet size
-  onOffTcpT4_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffTcpT4_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT4_1300.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffTcpT4_1500 = OnOffHelper(
-      "ns3::LinuxTcpSocketFactory", InetSocketAddress("14.0.2.1", 5000));
-  onOffTcpT4_1500.SetAttribute(
-      "DataRate", StringValue("20.7Mbps")); // 90% of 50% of 100Mbps link
-  onOffTcpT4_1500.SetAttribute("PacketSize",
-                               UintegerValue(1500)); // Packet size
-  onOffTcpT4_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffTcpT4_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT4_1500.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-
   // UDP source
 
-  // T0
-  /// 44 bytes
-  OnOffHelper onOffUdpT0_44 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                          InetSocketAddress("14.0.0.1", 6000));
-  onOffUdpT0_44.SetAttribute("DataRate", StringValue("2.45Mbps"));
-  onOffUdpT0_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffUdpT0_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffUdpT0_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT0_44.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffUdpT0_576 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.0.1", 6000));
-  onOffUdpT0_576.SetAttribute("DataRate", StringValue("0.06Mbps"));
-  onOffUdpT0_576.SetAttribute("PacketSize", UintegerValue(576));
-  onOffUdpT0_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffUdpT0_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT0_576.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffUdpT0_628 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.0.1", 6000));
-  onOffUdpT0_628.SetAttribute("DataRate", StringValue("0.105Mbps"));
-  onOffUdpT0_628.SetAttribute("PacketSize", UintegerValue(628));
-  onOffUdpT0_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffUdpT0_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT0_628.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffUdpT0_1300 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.0.1", 6000));
-  onOffUdpT0_1300.SetAttribute("DataRate", StringValue("0.085Mbps"));
-  onOffUdpT0_1300.SetAttribute("PacketSize", UintegerValue(1300));
-  onOffUdpT0_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffUdpT0_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT0_1300.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffUdpT0_1500 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.0.1", 6000));
-  onOffUdpT0_1500.SetAttribute("DataRate", StringValue("2.3Mbps"));
-  onOffUdpT0_1500.SetAttribute("PacketSize", UintegerValue(1500));
-  onOffUdpT0_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffUdpT0_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT0_1500.Install(traffic.Get(0));
-  apps.Start(Seconds(5));
-
-  // T2
-  /// 44 bytes
-  OnOffHelper onOffUdpT2_44 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                          InetSocketAddress("14.0.1.1", 6000));
-  onOffUdpT2_44.SetAttribute("DataRate", StringValue("2.45Mbps"));
-  onOffUdpT2_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffUdpT2_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffUdpT2_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT2_44.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffUdpT2_576 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.1.1", 6000));
-  onOffUdpT2_576.SetAttribute("DataRate", StringValue("0.06Mbps"));
-  onOffUdpT2_576.SetAttribute("PacketSize", UintegerValue(576));
-  onOffUdpT2_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffUdpT2_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT2_576.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffUdpT2_628 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.1.1", 6000));
-  onOffUdpT2_628.SetAttribute("DataRate", StringValue("0.105Mbps"));
-  onOffUdpT2_628.SetAttribute("PacketSize", UintegerValue(628));
-  onOffUdpT2_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffUdpT2_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT2_628.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffUdpT2_1300 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.1.1", 6000));
-  onOffUdpT2_1300.SetAttribute("DataRate", StringValue("0.085Mbps"));
-  onOffUdpT2_1300.SetAttribute("PacketSize", UintegerValue(1300));
-  onOffUdpT2_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffUdpT2_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT2_1300.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffUdpT2_1500 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.1.1", 6000));
-  onOffUdpT2_1500.SetAttribute("DataRate", StringValue("2.3Mbps"));
-  onOffUdpT2_1500.SetAttribute("PacketSize", UintegerValue(1500));
-  onOffUdpT2_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffUdpT2_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT2_1500.Install(traffic.Get(2));
-  apps.Start(Seconds(5));
-
-  // T4
-  /// 44 bytes
-  OnOffHelper onOffUdpT4_44 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                          InetSocketAddress("14.0.2.1", 6000));
-  onOffUdpT4_44.SetAttribute("DataRate", StringValue("2.45Mbps"));
-  onOffUdpT4_44.SetAttribute("PacketSize", UintegerValue(44));
-  onOffUdpT4_44.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.1]"));
-  onOffUdpT4_44.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  apps = onOffTcpT4_44.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 576 bytes
-  OnOffHelper onOffUdpT4_576 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.2.1", 6000));
-  onOffUdpT4_576.SetAttribute("DataRate", StringValue("0.06Mbps"));
-  onOffUdpT4_576.SetAttribute("PacketSize", UintegerValue(576));
-  onOffUdpT4_576.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.2]"));
-  onOffUdpT4_576.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  apps = onOffTcpT4_576.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 628 bytes
-  OnOffHelper onOffUdpT4_628 = OnOffHelper("ns3::LinuxUdpSocketFactory",
-                                           InetSocketAddress("14.0.2.1", 6000));
-  onOffUdpT4_628.SetAttribute("DataRate", StringValue("0.105Mbps"));
-  onOffUdpT4_628.SetAttribute("PacketSize", UintegerValue(628));
-  onOffUdpT4_628.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.3]"));
-  onOffUdpT4_628.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.6]"));
-  apps = onOffTcpT4_628.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 1300 bytes
-  OnOffHelper onOffUdpT4_1300 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.2.1", 6000));
-  onOffUdpT4_1300.SetAttribute("DataRate", StringValue("0.085Mbps"));
-  onOffUdpT4_1300.SetAttribute("PacketSize", UintegerValue(1300));
-  onOffUdpT4_1300.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.4]"));
-  onOffUdpT4_1300.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0.8]"));
-  apps = onOffTcpT4_1300.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
-  /// 1500 bytes
-  OnOffHelper onOffUdpT4_1500 = OnOffHelper(
-      "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.2.1", 6000));
-  onOffUdpT4_1500.SetAttribute("DataRate", StringValue("2.3Mbps"));
-  onOffUdpT4_1500.SetAttribute("PacketSize", UintegerValue(1500));
-  onOffUdpT4_1500.SetAttribute(
-      "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=0.5]"));
-  onOffUdpT4_1500.SetAttribute(
-      "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  apps = onOffTcpT4_1500.Install(traffic.Get(4));
-  apps.Start(Seconds(5));
+// // T0
+// OnOffHelper onOffUdpT0_1500 = OnOffHelper(
+//     "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.0.1", 6000));
+// onOffUdpT0_1500.SetAttribute("DataRate", StringValue("50Mbps"));
+// onOffUdpT0_1500.SetAttribute("PacketSize", UintegerValue(1500));
+// onOffUdpT0_1500.SetAttribute(
+//     "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=01]"));
+// onOffUdpT0_1500.SetAttribute(
+//     "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+// apps = onOffUdpT0_1500.Install(traffic.Get(0));
+// apps.Start(Seconds(60));
+// apps.Stop(Seconds(110));
+//
+// // T2
+// OnOffHelper onOffUdpT2_1500 = OnOffHelper(
+//     "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.1.1", 6000));
+// onOffUdpT2_1500.SetAttribute("DataRate", StringValue("50Mbps"));
+// onOffUdpT2_1500.SetAttribute("PacketSize", UintegerValue(1500));
+// onOffUdpT2_1500.SetAttribute(
+//     "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+// onOffUdpT2_1500.SetAttribute(
+//     "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+// apps = onOffUdpT2_1500.Install(traffic.Get(2));
+// apps.Start(Seconds(60));
+// apps.Stop(Seconds(110));
+//
+// // T4
+// OnOffHelper onOffUdpT4_1500 = OnOffHelper(
+//     "ns3::LinuxUdpSocketFactory", InetSocketAddress("14.0.2.1", 6000));
+// onOffUdpT4_1500.SetAttribute("DataRate", StringValue("50Mbps"));
+// onOffUdpT4_1500.SetAttribute("PacketSize", UintegerValue(1500));
+// onOffUdpT4_1500.SetAttribute(
+//     "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+// onOffUdpT4_1500.SetAttribute(
+//     "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+// apps = onOffUdpT4_1500.Install(traffic.Get(4));
+// apps.Start(Seconds(60));
+// apps.Stop(Seconds(110));
 
   // TCP sink
-  PacketSinkHelper TcpTrafficSink =
-      PacketSinkHelper("ns3::LinuxTcpSocketFactory",
-                       InetSocketAddress(Ipv4Address::GetAny(), 5000));
-  apps = TcpTrafficSink.Install(traffic.Get(1));
-  apps.Start(Seconds(2));
-  apps = TcpTrafficSink.Install(traffic.Get(3));
-  apps.Start(Seconds(2));
-  apps = TcpTrafficSink.Install(traffic.Get(5));
-  apps.Start(Seconds(2));
+  // PacketSinkHelper TcpTrafficSink =
+  //     PacketSinkHelper("ns3::LinuxTcpSocketFactory",
+  //                      InetSocketAddress(Ipv4Address::GetAny(), 5000));
+  // apps = TcpTrafficSink.Install(traffic.Get(1));
+  // apps.Start(Seconds(2));
+  // apps = TcpTrafficSink.Install(traffic.Get(3));
+  // apps.Start(Seconds(2));
+  // apps = TcpTrafficSink.Install(traffic.Get(5));
+  // apps.Start(Seconds(2));
 
   // UDP sink
   PacketSinkHelper UdpTrafficSink =
@@ -930,7 +603,7 @@ int main(int argc, char *argv[]) {
   p2pHelper.EnablePcapAll("thesis-main-" + congestionControl, false);
   // p2pHelper.EnableAsciiAll("thesis-main");
 
-  Simulator::Stop(Seconds(150));
+  Simulator::Stop(Seconds(160));
   Simulator::Run();
 
   Simulator::Destroy();
