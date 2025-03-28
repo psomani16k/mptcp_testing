@@ -8,8 +8,8 @@ def configure(conf):
 def build(bld):
     bld.build_a_script('dce', needed = ['core', 'internet', 'dce', 'point-to-point' ,'flow-monitor' ,'netanim'],
 	   		            target='bin/thesis',
-			            source=[ 'main.cc'],				            
-			            # source=[ 'thesis-ww.cc'],				            
+			            # source=[ 'main.cc'],				            
+			            source=[ 'thesis-ww.cc'],				            
 			            # source=[ 'thesis-wlw.cc'],				            
 			            # source=[ 'thesis-wlwl.cc'],				            
 			            )

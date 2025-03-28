@@ -1,33 +1,33 @@
 //
-//          +------+                                                   +------+
-//          |  T0  |                                                   |  T1  |
-//          +------+                                                   +------+
-//                  \                                                 /
-//                   \ 100Mbps                                       / 100Mbps
-//                    \                                             /
-//                     \                                           /
-//                      +------+                           +------+
-//                      |  R0  |---------------------------|  R1  |
-//                      +------+           10Mbps          +------+
-//                     /                                           \ 
-//                    / 1Gbps                                       \ 1Gbps
-//                   /                                               \ 
-//           +------+                                               +------+
-//           |  N0  |                                               |  N1  |
-//           +------+                                               +------+
-//                   \                                               /
-//                    \ 100Mbps                                     / 100Mbps
-//                     \                                           /
-//                      +------+           10Mbps          +------+
-//                      |  R2  |---------------------------|  R3  |
-//                      +------+                           +------+
-//                     /                                           \ 
-//                    /                                             \ 
-//                   / 5Mbps                                         \ 5Mbps
-//                  /                                                 \ 
-//          +------+                                                   +------+
-//          |  T2  |                                                   |  T3  |
-//          +------+                                                   +------+
+//          +------+                                                                        +------+
+//          |  T0  |                                                                        |  T1  |
+//          +------+                                                                        +------+
+//                  \                                                                      /
+//                   \ 10Mbps, 1ms                                                        / 10Mbps, 1ms
+//                    \                                                                  /
+//                     \                                                                /
+//                      +------+                                                +------+
+//                      |  R0  |------------------------------------------------|  R1  |
+//                      +------+                  5Mbps, 40ms                   +------+
+//                     /                                                                \ 
+//                    / 100Mbps, 5ms                                                     \ 100Mbps, 5ms
+//                   /                                                                    \ 
+//           +------+                                                                      +------+
+//           |  N0  |                                                                      |  N1  |
+//           +------+                                                                      +------+
+//                   \                                                                    /
+//                    \ 100Mbps, 5ms                                                     / 100Mbps, 5ms
+//                     \                                                                /
+//                      +------+                 10Mbps, 40ms                   +------+
+//                      |  R2  |------------------------------------------------|  R3  |
+//                      +------+                                                +------+
+//                     /                                                                \ 
+//                    /                                                                  \ 
+//                   / 10Mbps, 1ms                                                        \ 10Mbps, 1ms
+//                  /                                                                      \ 
+//          +------+                                                                        +------+
+//          |  T2  |                                                                        |  T3  |
+//          +------+                                                                        +------+
 //
 
 #include "ns3/applications-module.h"
@@ -41,198 +41,376 @@
 
 using namespace ns3;
 
-int main()
+void printTcpFlags(std::string key, std::string value)
 {
-        DceManagerHelper dceManager;
-        dceManager.SetTaskManagerAttribute("FiberManagerType",
-                                           StringValue("UcontextFiberManager"));
+    std::cout << key << " = " << value << std::endl;
+}
 
-        dceManager.SetNetworkStack("ns3::LinuxSocketFdFactory", "Library",
-                                   StringValue("liblinux.so"));
+void setPos(Ptr<Node> n, int x, int y, int z)
+{
+    Ptr<ConstantPositionMobilityModel> loc =
+        CreateObject<ConstantPositionMobilityModel>();
+    n->AggregateObject(loc);
+    Vector locVec2(x, y, z);
+    loc->SetPosition(locVec2);
+}
 
-        NodeContainer nodes, routers, traffic;
-        nodes.Create(2);
-        routers.Create(4);
-        traffic.Create(4);
+int main(int argc, char *argv[])
+{
+    // choosing congestion control algorithm
+    std::string congestionControl = "lia";
+    std::string scheduler = "default";
+    bool trafficOn = true;
+    CommandLine cmd;
+    cmd.AddValue("cc", "congestion control algo. LIA default",
+                 congestionControl);
 
-        LinuxStackHelper stack;
-        stack.Install(nodes);
-        stack.Install(routers);
-        stack.Install(traffic);
+    cmd.AddValue("sch", "schedular for mptcp. minRTT default",
+                 scheduler);
 
-        dceManager.Install(nodes);
-        dceManager.Install(routers);
-        dceManager.Install(traffic);
+    cmd.AddValue("tra", "traffic on",
+                 trafficOn);
 
-        PointToPointHelper pointToPoint;
-        Ipv4AddressHelper address1, address2;
-        Ipv4AddressHelper r0addr, r1addr, r2addr, r3addr, r0r1addr, r2r3addr;
-        std::ostringstream cmd_oss;
+    cmd.Parse(argc, argv);
 
-        r0addr.SetBase("10.0.0.0", "255.255.255.0");
-        r1addr.SetBase("10.1.0.0", "255.255.255.0");
-        r2addr.SetBase("10.2.0.0", "255.255.255.0");
-        r3addr.SetBase("10.3.0.0", "255.255.255.0");
-        r0r1addr.SetBase("11.0.0.0", "255.255.255.0");
-        r2r3addr.SetBase("11.1.0.0", "255.255.255.0");
+    std::cout << std::endl
+              << "Using '" << congestionControl
+              << "' congestion control algorithm." << std::endl;
+    std::cout << std::endl
+              << "Using '" << scheduler
+              << "' scheduler algorithm." << std::endl;
 
-        // SETTING UP ROUTERS
+    DceManagerHelper dceManager;
+    dceManager.SetTaskManagerAttribute("FiberManagerType",
+                                       StringValue("UcontextFiberManager"));
 
-        pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-        pointToPoint.SetChannelAttribute("Delay", StringValue("10ms"));
+    dceManager.SetNetworkStack("ns3::LinuxSocketFdFactory", "Library",
+                               StringValue("liblinux.so"));
 
-        // connecting R0 <-> R1
-        NetDeviceContainer r0r1 = pointToPoint.Install(routers.Get(0), routers.Get(1));
-        Ipv4InterfaceContainer r0r1Ip = r0r1addr.Assign(r0r1);
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.1.0.0/24 via 11.0.0.1 dev sim0"); // outbound - R1 network
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.1/32 via 10.0.0.2 dev sim1"); // inbound - N0
-        LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.3/32 via 10.0.0.4 dev sim2"); // inbound - T0
+    NodeContainer nodes, routers, traffic;
+    nodes.Create(2);
+    routers.Create(4);
+    traffic.Create(4);
 
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.0.0.0/24 via 11.0.0.2 dev sim0"); // outbound - R0 network
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.1/32 via 10.1.0.2 dev sim1"); // inbound - N1
-        LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.3/32 via 10.1.0.4 dev sim2"); // inbound - T1
+    LinuxStackHelper stack;
+    stack.Install(nodes);
+    stack.Install(routers);
+    stack.Install(traffic);
 
-        // connectin R2 <-> R3
-        NetDeviceContainer r2r3 = pointToPoint.Install(routers.Get(2), routers.Get(3));
-        Ipv4InterfaceContainer r2r3Ip = r2r3addr.Assign(r2r3);
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.3.0.0/24 via 11.1.0.1 dev sim0"); // outbound to R3 network
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.1/32 via 10.2.0.2 dev sim1"); // inbound - N0
-        LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.3/32 via 10.2.0.4 dev sim2"); // inbound - T2
+    dceManager.Install(nodes);
+    dceManager.Install(routers);
+    dceManager.Install(traffic);
 
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.2.0.0/24 via 11.1.0.2 dev sim0"); // outbound to R2 network
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.1/32 via 10.3.0.2 dev sim1"); // inbound - N1
-        LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.3/32 via 10.3.0.4 dev sim2"); // inbound - T3
+    PointToPointHelper pointToPoint;
+    Ipv4AddressHelper address1, address2;
+    Ipv4AddressHelper r0addr, r1addr, r2addr, r3addr, r0r1addr, r2r3addr;
+    std::ostringstream cmd_oss;
 
-        // SETTING UP MPTCP NODES
+    r0addr.SetBase("10.0.0.0", "255.255.255.0");
+    r1addr.SetBase("10.1.0.0", "255.255.255.0");
+    r2addr.SetBase("10.2.0.0", "255.255.255.0");
+    r3addr.SetBase("10.3.0.0", "255.255.255.0");
+    r0r1addr.SetBase("11.0.0.0", "255.255.255.0");
+    r2r3addr.SetBase("11.1.0.0", "255.255.255.0");
 
-        pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
-        pointToPoint.SetChannelAttribute("Delay", StringValue("1ns"));
+    // SETTING UP ROUTERS
 
-        // connecting N0 <-> R0
-        NetDeviceContainer n0r0 = pointToPoint.Install(nodes.Get(0), routers.Get(0));
-        Ipv4InterfaceContainer n0r0Ip = r0addr.Assign(n0r0);
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "rule add from 10.0.0.1/32 table 1");
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.0.0.0/24 dev sim0 scope link table 1");
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add default via 10.0.0.2 dev sim0 table 1");
+    // pointToPoint.SetQueue("ns3::DropTailQueue<Packet>", "MaxSize", StringValue("100p"));
+    // connecting R0 <-> R1
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue("40ms"));
 
-        // connecting N0 <-> R2
-        NetDeviceContainer n0r2 = pointToPoint.Install(nodes.Get(0), routers.Get(2));
-        Ipv4InterfaceContainer n0r2Ip = r2addr.Assign(n0r2);
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "rule add from 10.2.0.1/24 table 2");
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.2.0.0/24 dev sim0 scope link table 2");
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add default via 10.2.0.2 dev sim0 table 2");
+    NetDeviceContainer r0r1 = pointToPoint.Install(routers.Get(0), routers.Get(1));
+    Ipv4InterfaceContainer r0r1Ip = r0r1addr.Assign(r0r1);
+    LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.1.0.0/24 via 11.0.0.1 dev sim0"); // outbound - R1 network
+    LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.1/32 via 10.0.0.2 dev sim1"); // inbound - N0
+    LinuxStackHelper::RunIp(routers.Get(0), Seconds(0.2), "route add 10.0.0.3/32 via 10.0.0.4 dev sim2"); // inbound - T0
 
-        // setting default route
-        LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add default via 10.2.0.2 dev sim1");
+    LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.0.0.0/24 via 11.0.0.2 dev sim0"); // outbound - R0 network
+    LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.1/32 via 10.1.0.2 dev sim1"); // inbound - N1
+    LinuxStackHelper::RunIp(routers.Get(1), Seconds(0.2), "route add 10.1.0.3/32 via 10.1.0.4 dev sim2"); // inbound - T1
 
-        // connecting N1 <-> R1
-        NetDeviceContainer n1r1 = pointToPoint.Install(nodes.Get(1), routers.Get(1));
-        Ipv4InterfaceContainer n1r1Ip = r1addr.Assign(n1r1);
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "rule add from 10.1.0.1/24 table 1");
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add 10.1.0.0/24 dev sim0 scope link table 1");
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add default via 10.1.0.2 dev sim0 table 1");
+    // connectin R2 <-> R3
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue("40ms"));
 
-        // connecting N1 <-> R3
-        NetDeviceContainer n1r3 = pointToPoint.Install(nodes.Get(1), routers.Get(3));
-        Ipv4InterfaceContainer n1r3Ip = r3addr.Assign(n1r3);
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "rule add from 10.3.0.1/24 table 2");
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add 10.3.0.0/24 dev sim0 scope link table 2");
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add default via 10.3.0.2 dev sim0 table 2");
+    NetDeviceContainer r2r3 = pointToPoint.Install(routers.Get(2), routers.Get(3));
+    Ipv4InterfaceContainer r2r3Ip = r2r3addr.Assign(r2r3);
+    LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.3.0.0/24 via 11.1.0.1 dev sim0"); // outbound to R3 network
+    LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.1/32 via 10.2.0.2 dev sim1"); // inbound - N0
+    LinuxStackHelper::RunIp(routers.Get(2), Seconds(0.2), "route add 10.2.0.3/32 via 10.2.0.4 dev sim2"); // inbound - T2
 
-        // setting default route
-        LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add default via 10.3.0.2 dev sim1");
+    LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.2.0.0/24 via 11.1.0.2 dev sim0"); // outbound to R2 network
+    LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.1/32 via 10.3.0.2 dev sim1"); // inbound - N1
+    LinuxStackHelper::RunIp(routers.Get(3), Seconds(0.2), "route add 10.3.0.3/32 via 10.3.0.4 dev sim2"); // inbound - T3
 
-        // SETTING UP TRAFFIC NODES
+    // SETTING UP MPTCP NODES
 
-        pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
-        pointToPoint.SetChannelAttribute("Delay", StringValue("1ns"));
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue("5ms"));
 
-        // connecting T0 <-> R0
-        NetDeviceContainer t0r0 = pointToPoint.Install(traffic.Get(0), routers.Get(0));
-        Ipv4InterfaceContainer t0r0Ip = r0addr.Assign(t0r0);
-        LinuxStackHelper::RunIp(traffic.Get(0), Seconds(0.1), "route add default via 10.0.0.4 dev sim0");
+    // connecting N0 <-> R0
+    NetDeviceContainer n0r0 = pointToPoint.Install(nodes.Get(0), routers.Get(0));
+    Ipv4InterfaceContainer n0r0Ip = r0addr.Assign(n0r0);
+    LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.1.0.1 via 10.0.0.2 dev sim0");
 
-        // connecting T1 <-> R1
-        NetDeviceContainer t1r1 = pointToPoint.Install(traffic.Get(1), routers.Get(1));
-        Ipv4InterfaceContainer t1r1Ip = r1addr.Assign(t1r1);
-        LinuxStackHelper::RunIp(traffic.Get(1), Seconds(0.1), "route add default via 10.1.0.4 dev sim0");
+    // connecting N0 <-> R2
+    NetDeviceContainer n0r2 = pointToPoint.Install(nodes.Get(0), routers.Get(2));
+    Ipv4InterfaceContainer n0r2Ip = r2addr.Assign(n0r2);
+    LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.3.0.1 via 10.2.0.2 dev sim1");
 
-        // connecting T2 <-> R2
-        NetDeviceContainer t2r2 = pointToPoint.Install(traffic.Get(2), routers.Get(2));
-        Ipv4InterfaceContainer t2r2Ip = r2addr.Assign(t2r2);
-        LinuxStackHelper::RunIp(traffic.Get(2), Seconds(0.1), "route add default via 10.2.0.4 dev sim0");
+    // connecting N1 <-> R1
+    NetDeviceContainer n1r1 = pointToPoint.Install(nodes.Get(1), routers.Get(1));
+    Ipv4InterfaceContainer n1r1Ip = r1addr.Assign(n1r1);
+    LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add 10.0.0.1 via 10.1.0.2 dev sim0");
 
-        // connecting T3 <-> R3
-        NetDeviceContainer t3r3 = pointToPoint.Install(traffic.Get(3), routers.Get(3));
-        Ipv4InterfaceContainer t3r3Ip = r3addr.Assign(t3r3);
-        LinuxStackHelper::RunIp(traffic.Get(3), Seconds(0.1), "route add default via 10.3.0.4 dev sim0");
+    // connecting N1 <-> R3
+    NetDeviceContainer n1r3 = pointToPoint.Install(nodes.Get(1), routers.Get(3));
+    Ipv4InterfaceContainer n1r3Ip = r3addr.Assign(n1r3);
+    LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add 10.2.0.1 via 10.3.0.2 dev sim1");
 
-        // debug
-        stack.SysctlSet(nodes, ".net.mptcp.mptcp_debug", "1");
+    // SETTING UP TRAFFIC NODES
 
-        DceApplicationHelper dce;
-        ApplicationContainer apps;
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
 
-        dce.SetStackSize(1 << 20);
+    // connecting T0 <-> R0
+    NetDeviceContainer t0r0 = pointToPoint.Install(traffic.Get(0), routers.Get(0));
+    Ipv4InterfaceContainer t0r0Ip = r0addr.Assign(t0r0);
+    LinuxStackHelper::RunIp(traffic.Get(0), Seconds(0.1), "route add default via 10.0.0.4 dev sim0");
 
-        // MPTCP APPS
+    // connecting T1 <-> R1
+    NetDeviceContainer t1r1 = pointToPoint.Install(traffic.Get(1), routers.Get(1));
+    Ipv4InterfaceContainer t1r1Ip = r1addr.Assign(t1r1);
+    LinuxStackHelper::RunIp(traffic.Get(1), Seconds(0.1), "route add default via 10.1.0.4 dev sim0");
 
-        // Launch iperf client on node 0 - MPTCP traffic starts at 5 - 35 sec
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-c 10.3.0.1 -i 1 --time 60");
-        apps = dce.Install(nodes.Get(0));
-        apps.Start(Seconds(5.0));
-        apps.Stop(Seconds(66));
+    // connecting T2 <-> R2
+    NetDeviceContainer t2r2 = pointToPoint.Install(traffic.Get(2), routers.Get(2));
+    Ipv4InterfaceContainer t2r2Ip = r2addr.Assign(t2r2);
+    LinuxStackHelper::RunIp(traffic.Get(2), Seconds(0.1), "route add default via 10.2.0.4 dev sim0");
 
-        // Launch iperf server on node 1
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-s");
-        apps = dce.Install(nodes.Get(1));
+    // connecting T3 <-> R3
+    NetDeviceContainer t3r3 = pointToPoint.Install(traffic.Get(3), routers.Get(3));
+    Ipv4InterfaceContainer t3r3Ip = r3addr.Assign(t3r3);
+    LinuxStackHelper::RunIp(traffic.Get(3), Seconds(0.1), "route add default via 10.3.0.4 dev sim0");
+
+    // debug
+    stack.SysctlSet(nodes, ".net.mptcp.mptcp_debug", "1");
+    stack.SysctlSet(nodes, ".net.ipv4.tcp_congestion_control", congestionControl);
+    stack.SysctlSet(nodes, ".net.mptcp.mptcp_scheduler", scheduler);
+
+    LinuxStackHelper::SysctlGet(nodes.Get(0), Seconds(1),
+                                ".net.ipv4.tcp_available_congestion_control",
+                                &printTcpFlags);
+
+    LinuxStackHelper::SysctlGet(nodes.Get(0), Seconds(1),
+                                ".net.ipv4.tcp_congestion_control",
+                                &printTcpFlags);
+
+    LinuxStackHelper::SysctlGet(nodes.Get(0), Seconds(1),
+                                ".net.mptcp.mptcp_scheduler",
+                                &printTcpFlags);
+
+    DceApplicationHelper dce;
+    ApplicationContainer apps;
+
+    dce.SetStackSize(1 << 24);
+
+    //------------
+    // MPTCP APPS
+    //------------
+
+    // source on N0
+    BulkSendHelper bulkSend = BulkSendHelper("ns3::LinuxTcpSocketFactory",
+                                             InetSocketAddress("10.1.0.1", 9)); // 5mbps link
+    int dataToSendMb = 100000;
+    bulkSend.SetAttribute("MaxBytes", UintegerValue(dataToSendMb * 1000000));
+    apps = bulkSend.Install(nodes.Get(0));
+    apps.Start(Seconds(20));
+
+    // sink on N1
+    PacketSinkHelper sink =
+        PacketSinkHelper("ns3::LinuxTcpSocketFactory",
+                         InetSocketAddress(Ipv4Address::GetAny(), 9));
+    apps = sink.Install(nodes.Get(1));
+    apps.Start(Seconds(5));
+
+    //----------
+    // UDP APPS
+    //----------
+    int mptcp_start = 20;
+    if (trafficOn)
+    {
+        //  sink on T1 and T0
+        //  -----------------
+        PacketSinkHelper UdpTrafficSink =
+            PacketSinkHelper("ns3::LinuxUdpSocketFactory",
+                             InetSocketAddress(Ipv4Address::GetAny(), 6000));
+        apps = UdpTrafficSink.Install(traffic.Get(0));
         apps.Start(Seconds(2));
-        apps.Stop(Seconds(70));
-
-        // UDP APPS
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
-        apps = dce.Install(traffic.Get(0));
-        apps.Start(Seconds(15.0));
-        apps.Stop(Seconds(40));
-
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
-        apps = dce.Install(traffic.Get(2));
-        apps.Start(Seconds(25.0));
-        apps.Stop(Seconds(50));
-
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -s");
-        apps = dce.Install(traffic.Get(1));
+        apps = UdpTrafficSink.Install(traffic.Get(1));
         apps.Start(Seconds(2));
-        apps.Stop(Seconds(45));
 
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -s");
-        apps = dce.Install(traffic.Get(3));
-        apps.Start(Seconds(2));
-        apps.Stop(Seconds(55));
+        // sources based on time
+        // ---------------------
 
-        pointToPoint.EnablePcapAll("thesis-ww", false);
+        // 20 - 50  : no traffic
+        // 50 - 80  : ft only
+        // 80 - 110 : rt only
+        // 110 - 140: rt + ft both
 
-        Simulator::Stop(Seconds(80.0));
-        Simulator::Run();
-        Simulator::Destroy();
+        // // forward traffic - I
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.1.0.3 -b 8M --time 100");
+        // apps = dce.Install(traffic.Get(0));
+        // apps.Start(Seconds(mptcp_start + 100));
+        // apps.Stop(Seconds(mptcp_start + 200));
 
-        return 0;
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(1));
+        // apps.Start(Seconds(mptcp_start + 99));
+        // apps.Stop(Seconds(mptcp_start + 201));
+
+        // reverse traffic - II
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.0.0.3 -b 4.9M --time 100");
+        // apps = dce.Install(traffic.Get(1));
+        // apps.Start(Seconds(mptcp_start + 200));
+        // apps.Stop(Seconds(mptcp_start + 400));
+
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(0));
+        // apps.Start(Seconds(mptcp_start + 199));
+        // apps.Stop(Seconds(mptcp_start + 401));
+
+        // // forward+reverse traffic - III
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.1.0.3 -b 8M --time 100");
+        // apps = dce.Install(traffic.Get(0));
+        // apps.Start(Seconds(mptcp_start + 300));
+        // apps.Stop(Seconds(mptcp_start + 400));
+
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(1));
+        // apps.Start(Seconds(mptcp_start + 299));
+        // apps.Stop(Seconds(mptcp_start + 401));
+
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.0.0.3 -b 8M --time 100");
+        // apps = dce.Install(traffic.Get(1));
+        // apps.Start(Seconds(mptcp_start + 300));
+        // apps.Stop(Seconds(mptcp_start + 400));
+
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(0));
+        // apps.Start(Seconds(mptcp_start + 299));
+        // apps.Stop(Seconds(mptcp_start + 401));
+
+        // forward traffic from 50 - 100
+        OnOffHelper forward = OnOffHelper(
+            "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.1.0.3", 6000));
+        forward.SetAttribute("DataRate", StringValue("4.9Mbps"));
+        forward.SetAttribute("PacketSize", UintegerValue(1500));
+        forward.SetAttribute(
+            "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+        forward.SetAttribute(
+            "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+        apps = forward.Install(traffic.Get(0));
+        apps.Start(Seconds(mptcp_start + 100));
+        apps.Stop(Seconds(mptcp_start + 200));
+
+        // reverse traffic from 100 - 200
+        OnOffHelper reverse = OnOffHelper(
+            "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.0.0.3", 6000));
+        reverse.SetAttribute("DataRate", StringValue("4.9Mbps"));
+        reverse.SetAttribute("PacketSize", UintegerValue(1500));
+        reverse.SetAttribute(
+            "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+        reverse.SetAttribute(
+            "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+        apps = reverse.Install(traffic.Get(1));
+        apps.Start(Seconds(mptcp_start + 200));
+        apps.Stop(Seconds(mptcp_start + 400));
+
+        // forward traffic from 150 - 200
+        // OnOffHelper forward = OnOffHelper(
+        //     "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.1.0.3", 6000));
+        forward.SetAttribute("DataRate", StringValue("4.9Mbps"));
+        forward.SetAttribute("PacketSize", UintegerValue(1500));
+        forward.SetAttribute(
+            "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+        forward.SetAttribute(
+            "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+        apps = forward.Install(traffic.Get(0));
+        apps.Start(Seconds(mptcp_start + 300)); //
+        apps.Stop(Seconds(mptcp_start + 400));  //
+    }
+
+    int yOffSet = 50;
+    int xOffSet = 0;
+    setPos(nodes.Get(0), 0 + xOffSet, 0 + yOffSet, 0);
+    setPos(nodes.Get(1), 100 + xOffSet, 0 + yOffSet, 0);
+    setPos(routers.Get(0), 25 + xOffSet, -25 + yOffSet, 0);
+    setPos(routers.Get(1), 75 + xOffSet, -25 + yOffSet, 0);
+    setPos(routers.Get(2), 25 + xOffSet, 25 + yOffSet, 0);
+    setPos(routers.Get(3), 75 + xOffSet, 25 + yOffSet, 0);
+    setPos(traffic.Get(0), 25 - 5 + xOffSet, -10 - 25 + yOffSet, 0);
+    setPos(traffic.Get(1), 75 + 5 + xOffSet, -10 - 25 + yOffSet, 0);
+    setPos(traffic.Get(2), 25 - 5 + xOffSet, -10 + 25 + yOffSet, 0);
+    setPos(traffic.Get(3), 75 + 5 + xOffSet, -10 + 25 + yOffSet, 0);
+
+    AnimationInterface anim("thesis-anim.xml");
+    anim.SetMaxPktsPerTraceFile(1 * 10000000);
+    anim.EnablePacketMetadata(true);
+
+    anim.UpdateNodeColor(nodes.Get(0)->GetId(), 0, 255, 0);
+    anim.UpdateNodeSize(nodes.Get(0)->GetId(), 5.0, 5.0);
+    anim.UpdateNodeColor(nodes.Get(1)->GetId(), 0, 255, 0);
+    anim.UpdateNodeSize(nodes.Get(1)->GetId(), 5.0, 5.0);
+
+    anim.UpdateNodeColor(routers.Get(0)->GetId(), 255, 0, 0);
+    anim.UpdateNodeSize(routers.Get(0)->GetId(), 4.0, 4.0);
+    anim.UpdateNodeColor(routers.Get(1)->GetId(), 255, 0, 0);
+    anim.UpdateNodeSize(routers.Get(1)->GetId(), 4.0, 4.0);
+    anim.UpdateNodeColor(routers.Get(2)->GetId(), 255, 0, 0);
+    anim.UpdateNodeSize(routers.Get(2)->GetId(), 4.0, 4.0);
+    anim.UpdateNodeColor(routers.Get(3)->GetId(), 255, 0, 0);
+    anim.UpdateNodeSize(routers.Get(3)->GetId(), 4.0, 4.0);
+
+    anim.UpdateNodeColor(traffic.Get(0)->GetId(), 0, 0, 255);
+    anim.UpdateNodeSize(traffic.Get(0)->GetId(), 3.0, 3.0);
+    anim.UpdateNodeColor(traffic.Get(1)->GetId(), 0, 0, 255);
+    anim.UpdateNodeSize(traffic.Get(1)->GetId(), 3.0, 3.0);
+    anim.UpdateNodeColor(traffic.Get(2)->GetId(), 0, 0, 255);
+    anim.UpdateNodeSize(traffic.Get(2)->GetId(), 3.0, 3.0);
+    anim.UpdateNodeColor(traffic.Get(3)->GetId(), 0, 0, 255);
+    anim.UpdateNodeSize(traffic.Get(3)->GetId(), 3.0, 3.0);
+
+    pointToPoint.EnablePcapAll("thesis-ww", false);
+
+    Simulator::Stop(Seconds(mptcp_start + 405));
+    Simulator::Run();
+    Simulator::Destroy();
+
+    return 0;
 }
