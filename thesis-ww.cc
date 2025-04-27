@@ -77,12 +77,25 @@ int main(int argc, char *argv[])
 
     cmd.Parse(argc, argv);
 
-    std::cout << std::endl
-              << "Using '" << congestionControl
-              << "' congestion control algorithm." << std::endl;
-    std::cout << std::endl
-              << "Using '" << scheduler
-              << "' scheduler algorithm." << std::endl;
+    std::cout
+        << "Using '" << congestionControl
+        << "' congestion control algorithm." << std::endl
+        << std::endl;
+
+    std::cout
+        << "Using '" << scheduler
+        << "' scheduler algorithm." << std::endl
+        << std::endl;
+
+    std::cout
+        << "Using '" << (wl ? "wireless" : "wired")
+        << "' link." << std::endl
+        << std::endl;
+
+    std::cout
+        << "SACK: " << sack
+        << std::endl
+        << std::endl;
 
     DceManagerHelper dceManager;
     dceManager.SetTaskManagerAttribute("FiberManagerType",
@@ -106,7 +119,6 @@ int main(int argc, char *argv[])
     dceManager.Install(traffic);
 
     PointToPointHelper pointToPoint;
-    Ipv4AddressHelper address1, address2;
     Ipv4AddressHelper r0addr, r1addr, r2addr, r3addr, r0r1addr, r2r3addr;
     std::ostringstream cmd_oss;
 
@@ -120,7 +132,7 @@ int main(int argc, char *argv[])
     Ptr<RateErrorModel> wifiErrorModel =
         CreateObjectWithAttributes<RateErrorModel>(
             "RanVar", StringValue("ns3::UniformRandomVariable[Min=0.0|Max=1.0]"),
-            "ErrorRate", DoubleValue(0.1), "ErrorUnit",
+            "ErrorRate", DoubleValue(0.02), "ErrorUnit",
             EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
 
     // SETTING UP ROUTERS
@@ -170,12 +182,12 @@ int main(int argc, char *argv[])
     LinuxStackHelper::RunIp(nodes.Get(0), Seconds(0.1), "route add 10.3.0.1 via 10.2.0.2 dev sim1");
 
     // connecting N1 <-> R1
-    pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
-    pointToPoint.SetChannelAttribute("Delay", StringValue("20ms"));
+    pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+    pointToPoint.SetChannelAttribute("Delay", StringValue("5ms"));
     NetDeviceContainer n1r1 = pointToPoint.Install(nodes.Get(1), routers.Get(1));
     Ipv4InterfaceContainer n1r1Ip = r1addr.Assign(n1r1);
     LinuxStackHelper::RunIp(nodes.Get(1), Seconds(0.1), "route add 10.0.0.1 via 10.1.0.2 dev sim0");
-    if (wl)
+    if (false)
     {
         n1r1.Get(0)->SetAttribute("ReceiveErrorModel",
                                   PointerValue(wifiErrorModel));
@@ -245,6 +257,7 @@ int main(int argc, char *argv[])
     //------------
     // MPTCP APPS
     //------------
+    int mptcp_start = 10;
 
     // source on N0
     BulkSendHelper bulkSend = BulkSendHelper("ns3::LinuxTcpSocketFactory",
@@ -252,7 +265,7 @@ int main(int argc, char *argv[])
     int dataToSendMb = 100000;
     bulkSend.SetAttribute("MaxBytes", UintegerValue(dataToSendMb * 1000000));
     apps = bulkSend.Install(nodes.Get(0));
-    apps.Start(Seconds(20));
+    apps.Start(Seconds(mptcp_start));
 
     // sink on N1
     PacketSinkHelper sink =
@@ -264,7 +277,7 @@ int main(int argc, char *argv[])
     //----------
     // UDP APPS
     //----------
-    int mptcp_start = 20;
+
     //  sink on T1 and T0
     //  -----------------
     PacketSinkHelper UdpTrafficSink =
@@ -274,45 +287,79 @@ int main(int argc, char *argv[])
     apps.Start(Seconds(2));
     apps = UdpTrafficSink.Install(traffic.Get(1));
     apps.Start(Seconds(2));
+    apps = UdpTrafficSink.Install(traffic.Get(2));
+    apps.Start(Seconds(2));
+    apps = UdpTrafficSink.Install(traffic.Get(3));
+    apps.Start(Seconds(2));
+
+    // ----------
+    //   PATH 1
+    // ----------
 
     // forward traffic from 50 - 100
     OnOffHelper forward = OnOffHelper(
         "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.1.0.3", 6000));
-    forward.SetAttribute("DataRate", StringValue("11Mbps"));
-    forward.SetAttribute("PacketSize", UintegerValue(1500));
+    forward.SetAttribute("DataRate", StringValue("4Mbps"));
+    forward.SetAttribute("PacketSize", UintegerValue(200));
     forward.SetAttribute(
         "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     forward.SetAttribute(
         "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     apps = forward.Install(traffic.Get(0));
-    apps.Start(Seconds(mptcp_start + 50));
-    apps.Stop(Seconds(mptcp_start + 100));
+    apps.Start(Seconds(mptcp_start + 90));
+    apps.Stop(Seconds(mptcp_start + 190));
 
-    // reverse traffic from 100 - 200
     OnOffHelper reverse = OnOffHelper(
         "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.0.0.3", 6000));
-    reverse.SetAttribute("DataRate", StringValue("11Mbps"));
-    reverse.SetAttribute("PacketSize", UintegerValue(1500));
+    reverse.SetAttribute("DataRate", StringValue("4Mbps"));
+    reverse.SetAttribute("PacketSize", UintegerValue(200));
     reverse.SetAttribute(
         "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     reverse.SetAttribute(
         "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     apps = reverse.Install(traffic.Get(1));
-    apps.Start(Seconds(mptcp_start + 100));
-    apps.Stop(Seconds(mptcp_start + 200));
+    apps.Start(Seconds(mptcp_start + 190));
+    apps.Stop(Seconds(mptcp_start + 390));
 
     // forward traffic from 150 - 200
-    // OnOffHelper forward = OnOffHelper(
-    //     "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.1.0.3", 6000));
-    forward.SetAttribute("DataRate", StringValue("11Mbps"));
-    forward.SetAttribute("PacketSize", UintegerValue(1500));
+    forward.SetAttribute("DataRate", StringValue("4Mbps"));
+    forward.SetAttribute("PacketSize", UintegerValue(200));
     forward.SetAttribute(
         "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
     forward.SetAttribute(
         "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
     apps = forward.Install(traffic.Get(0));
-    apps.Start(Seconds(mptcp_start + 150)); //
-    apps.Stop(Seconds(mptcp_start + 200));  //
+    apps.Start(Seconds(mptcp_start + 290));
+    apps.Stop(Seconds(mptcp_start + 390));
+
+    // ----------
+    //   PATH 2
+    // ----------
+
+    // forward + reverse traffic from 200 - 250
+    OnOffHelper forward2 = OnOffHelper(
+        "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.3.0.3", 6000));
+    forward2.SetAttribute("DataRate", StringValue("8Mbps"));
+    forward2.SetAttribute("PacketSize", UintegerValue(200));
+    forward2.SetAttribute(
+        "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    forward2.SetAttribute(
+        "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    apps = forward2.Install(traffic.Get(2));
+    apps.Start(Seconds(mptcp_start + 390));
+    apps.Stop(Seconds(mptcp_start + 490));
+
+    OnOffHelper reverse2 = OnOffHelper(
+        "ns3::LinuxUdpSocketFactory", InetSocketAddress("10.2.0.3", 6000));
+    reverse2.SetAttribute("DataRate", StringValue("8Mbps"));
+    reverse2.SetAttribute("PacketSize", UintegerValue(200));
+    reverse2.SetAttribute(
+        "OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+    reverse2.SetAttribute(
+        "OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+    apps = reverse2.Install(traffic.Get(3));
+    apps.Start(Seconds(mptcp_start + 390));
+    apps.Stop(Seconds(mptcp_start + 490));
 
     int yOffSet = 50;
     int xOffSet = 0;
@@ -356,7 +403,7 @@ int main(int argc, char *argv[])
 
     pointToPoint.EnablePcapAll("thesis-ww", false);
 
-    Simulator::Stop(Seconds(mptcp_start + 405));
+    Simulator::Stop(Seconds(mptcp_start + 495));
     Simulator::Run();
     Simulator::Destroy();
 

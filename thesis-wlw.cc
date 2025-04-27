@@ -252,37 +252,77 @@ int main()
         apps.Stop(Seconds(70));
 
         // UDP APPS
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
-        apps = dce.Install(traffic.Get(0));
-        apps.Start(Seconds(15.0));
-        apps.Stop(Seconds(40));
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.1.0.3 -b 7M --time 20");
+        // apps = dce.Install(traffic.Get(0));
+        // apps.Start(Seconds(15.0));
+        // apps.Stop(Seconds(40));
 
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
-        apps = dce.Install(traffic.Get(2));
-        apps.Start(Seconds(25.0));
-        apps.Stop(Seconds(50));
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -c 10.3.0.3 -b 7M --time 20");
+        // apps = dce.Install(traffic.Get(2));
+        // apps.Start(Seconds(25.0));
+        // apps.Stop(Seconds(50));
 
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -s");
-        apps = dce.Install(traffic.Get(1));
-        apps.Start(Seconds(2));
-        apps.Stop(Seconds(45));
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(1));
+        // apps.Start(Seconds(2));
+        // apps.Stop(Seconds(45));
 
-        dce.SetBinary("iperf");
-        dce.ResetArguments();
-        dce.ResetEnvironment();
-        dce.ParseArguments("-u -s");
-        apps = dce.Install(traffic.Get(3));
-        apps.Start(Seconds(2));
-        apps.Stop(Seconds(55));
+        // dce.SetBinary("iperf");
+        // dce.ResetArguments();
+        // dce.ResetEnvironment();
+        // dce.ParseArguments("-u -s");
+        // apps = dce.Install(traffic.Get(3));
+        // apps.Start(Seconds(2));
+        // apps.Stop(Seconds(55));
+
+        // int yOffSet = 50;
+        // int xOffSet = 0;
+        // setPos(nodes.Get(0), 0 + xOffSet, 0 + yOffSet, 0);
+        // setPos(nodes.Get(1), 100 + xOffSet, 0 + yOffSet, 0);
+        // setPos(routers.Get(0), 25 + xOffSet, -25 + yOffSet, 0);
+        // setPos(routers.Get(1), 75 + xOffSet, -25 + yOffSet, 0);
+        // setPos(routers.Get(2), 25 + xOffSet, 25 + yOffSet, 0);
+        // setPos(routers.Get(3), 75 + xOffSet, 25 + yOffSet, 0);
+        // setPos(traffic.Get(0), 25 - 5 + xOffSet, -10 - 25 + yOffSet, 0);
+        // setPos(traffic.Get(1), 75 + 5 + xOffSet, -10 - 25 + yOffSet, 0);
+        // setPos(traffic.Get(2), 25 - 5 + xOffSet, -10 + 25 + yOffSet, 0);
+        // setPos(traffic.Get(3), 75 + 5 + xOffSet, -10 + 25 + yOffSet, 0);
+
+        // AnimationInterface anim("thesis-anim.xml");
+        // anim.SetMaxPktsPerTraceFile(1 * 10000000);
+        // anim.EnablePacketMetadata(true);
+
+        // anim.UpdateNodeColor(nodes.Get(0)->GetId(), 0, 255, 0);
+        // anim.UpdateNodeSize(nodes.Get(0)->GetId(), 5.0, 5.0);
+        // anim.UpdateNodeColor(nodes.Get(1)->GetId(), 0, 255, 0);
+        // anim.UpdateNodeSize(nodes.Get(1)->GetId(), 5.0, 5.0);
+
+        // anim.UpdateNodeColor(routers.Get(0)->GetId(), 255, 0, 0);
+        // anim.UpdateNodeSize(routers.Get(0)->GetId(), 4.0, 4.0);
+        // anim.UpdateNodeColor(routers.Get(1)->GetId(), 255, 0, 0);
+        // anim.UpdateNodeSize(routers.Get(1)->GetId(), 4.0, 4.0);
+        // anim.UpdateNodeColor(routers.Get(2)->GetId(), 255, 0, 0);
+        // anim.UpdateNodeSize(routers.Get(2)->GetId(), 4.0, 4.0);
+        // anim.UpdateNodeColor(routers.Get(3)->GetId(), 255, 0, 0);
+        // anim.UpdateNodeSize(routers.Get(3)->GetId(), 4.0, 4.0);
+
+        // anim.UpdateNodeColor(traffic.Get(0)->GetId(), 0, 0, 255);
+        // anim.UpdateNodeSize(traffic.Get(0)->GetId(), 3.0, 3.0);
+        // anim.UpdateNodeColor(traffic.Get(1)->GetId(), 0, 0, 255);
+        // anim.UpdateNodeSize(traffic.Get(1)->GetId(), 3.0, 3.0);
+        // anim.UpdateNodeColor(traffic.Get(2)->GetId(), 0, 0, 255);
+        // anim.UpdateNodeSize(traffic.Get(2)->GetId(), 3.0, 3.0);
+        // anim.UpdateNodeColor(traffic.Get(3)->GetId(), 0, 0, 255);
+        // anim.UpdateNodeSize(traffic.Get(3)->GetId(), 3.0, 3.0);
 
         pointToPoint.EnablePcapAll("thesis-wlw", false);
 

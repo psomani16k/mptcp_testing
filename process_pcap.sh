@@ -11,4 +11,4 @@ tshark -r ../../thesis-ww-1-1.pcap -T fields -e frame.time_epoch -e frame.len -E
 
 python3 processcsv.py
 
-gnuplot plot.p
+# gnuplot plot_p.p
