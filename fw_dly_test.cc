@@ -44,16 +44,16 @@
 using namespace ns3;
 
 #define PATH_1_FWBW "10Mbps"
-#define PATH_1_FWDLY "10ms"
+#define PATH_1_FWDLY "100ms"
 
 #define PATH_1_RVBW "10Mbps"
-#define PATH_1_RVDLY "1000ms"
+#define PATH_1_RVDLY "1ms"
 
 #define PATH_2_FWBW "10Mbps"
 #define PATH_2_FWDLY "1000ms"
 
 #define PATH_2_RVBW "10Mbps"
-#define PATH_2_RVDLY "10ms"
+#define PATH_2_RVDLY "1ms"
 
 #define INFINITE_BW "100Mbps"
 #define INFINITE_DLY "1ms"
@@ -367,7 +367,7 @@ int main(int argc, char *argv[]) {
 
   pointToPoint.EnablePcapAll("fw_dly_test", false);
 
-  Simulator::Stop(Seconds(mptcp_start + 10));
+  Simulator::Stop(Seconds(mptcp_start + 5));
   Simulator::Run();
   Simulator::Destroy();
 
